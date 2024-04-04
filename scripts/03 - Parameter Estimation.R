@@ -7,4 +7,6 @@
 
 library(lme4)
 # define linear mixed effects model formula to be used
-f<-
+f<- " ~ experienced.flag.long +num.nests+ (1 | DNA_ID)+ (1 |Beach), data = df.dispersion"
+
+head(baseline_df)
