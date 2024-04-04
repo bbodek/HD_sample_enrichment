@@ -1,0 +1,229 @@
+# clear workspace
+rm(list = ls())
+library(dplyr)
+
+# # General participant related data, some of 
+# # which may be annually updated. This
+# # includes: Demographics, HDCC 
+# # (HD clinical characteristics), CAG, Mortality
+data_profile = read.csv("G:/projects/enroll-hd/DATA-00000464 - Enroll-HD PDS5-R2 Study Dataset/Enroll-HD-Periodic-Dataset-2020-10-R2/profile.csv", sep = "\t") %>%
+  select(subjid, sex, race, caghigh) %>%
+  mutate(sex = ifelse(sex == "f",1,0), 
+         # race = ifelse(race > 3 | race == 2,4,race))
+         race = ifelse(race ==1,1,0))
+
+
+# data about ENROLL
+data_enroll = read.csv("G:/projects/enroll-hd/DATA-00000464 - Enroll-HD PDS5-R2 Study Dataset/Enroll-HD-Periodic-Dataset-2020-10-R2/enroll.csv", sep = "\t") %>% 
+  select(subjid, seq, motscore, sdmt1,tfcscore, age, diagconf,visdy,swrt1)
+
+# combine the datasets 
+data_enroll = data_enroll %>%
+  left_join(data_profile, by=c("subjid")) %>%
+  # rename variables to match PREDICT HD
+  rename(b = subjid, visit = seq, TMS = motscore, TFCS = tfcscore,SDMT = sdmt1, cag = caghigh, DCL = diagconf,SWR = swrt1) %>%
+  mutate(age = as.numeric(age))%>%
+  mutate(cag = as.numeric(cag))
+
+# delete unused datasets
+rm(data_profile)
+data_enroll$b  %>% unique() %>% length() # 21116 unique participants
+data_enroll $b%>% length() # 67000 observations
+
+################################################################################
+## begin applying inclusion and exclusion criteria
+
+# sort data by appointment time
+data_enroll = data_enroll[with(data_enroll, order(b, age)), ]
+
+# create data with baseline DCL, TMS, and SDMT
+data_baseline = data_enroll %>%
+  # get first observation for each subject
+  group_by(b) %>%
+  slice_head(n = 1) %>%
+  # rename X to baseline_X
+  rename(baseline_age = age,
+         baseline_DCL = DCL,
+         baseline_TMS = TMS,
+         baseline_SDMT = SDMT,
+         baseline_CAG = cag) %>%
+  select(b, contains("baseline"))
+
+# join baseline data to model dataset by SUBJID
+data_enroll = data_baseline %>%
+  full_join(data_enroll, ., by = "b")
+rm(data_baseline)
+
+# create age at diagnosis (diag_age)
+data_diag = data_enroll %>%
+  # motor onset is said to occur when DCL = 4 for the first time,
+  # so calculate age at diagnosis for all subjects who experience onset
+  filter(DCL == 4) %>%
+  group_by(b) %>%
+  filter(visit == min(visit)) %>%
+  summarise(X = as.numeric(age))
+
+# join diagnosis age data to model dataset by SUBJID
+data_enroll = data_diag %>%
+  left_join(data_enroll, ., by = "b")
+rm(data_diag)
+
+# create event time variable and delta
+data_enroll = data_enroll %>%
+  # delta is 1 if diagnosis is observed, 0 otherwise
+  mutate(delta = ifelse(test = is.na(X), yes = 0, no = 1)) %>%
+  # event time (T) is time from baseline to diagnosis
+  mutate(age = as.numeric(age)) %>%
+  mutate(AX = age-X)
+
+# for censored subjects, get age at last visit
+data_censored = data_enroll %>%
+  # filter: subjects who do not experience motor onset
+  filter(delta == 0) %>%
+  # calculate age at last visit
+  group_by(b) %>%
+  slice_tail() %>%
+  mutate(C = as.numeric(age)) %>%
+  select(b, C) 
+
+# join censoring time to model dataset by SUBJID
+data_enroll = data_censored %>%
+  left_join(data_enroll, ., by = "b")
+rm(data_censored)
+
+# create censoring time variable
+data_enroll = data_enroll %>%
+  # censoring time (C) is time from baseline to dropout
+  mutate(AC = age - C,
+         W = ifelse(delta == 1, X, C),
+         AW = ifelse(delta == 1, AX, AC))
+
+# create CAP score variables at baseline and for all visits
+data_enroll = data_enroll %>%
+  mutate(CAP = age*(cag-33.66),baseline_CAP = baseline_age * (cag-33.66))
+
+# create PIN score variables at baseline and for all visits
+data_enroll = data_enroll %>%
+  mutate(PIN = (51*TMS-34*SDMT+7*CAP-883)/1044,baseline_PIN = (51*baseline_TMS-34*baseline_SDMT+7*baseline_CAP-883)/1044)
+
+## APPLY EXCLUSION CRITERIA FROM LONG ET AL (2017)
+
+# number of subjects before applying exclusion criteria
+data_enroll$b %>% unique() %>% length()
+
+## filter: age >= 18
+data_age = data_enroll %>%
+  filter(visit == 1) %>%
+  filter(baseline_age != "<18") %>%
+  select(b)
+
+selected_df = data_enroll
+
+selected_df = selected_df %>%
+  filter(b %in% data_age$b)
+rm(data_age)
+selected_df$b %>% unique() %>% length() #21086
+
+
+# filter: CAG >= 36 at baseline 
+good_subject_id = selected_df %>% 
+  filter(visit==1) %>%
+  filter(cag >= 36) %>%
+  select(b)
+selected_df = selected_df %>%
+  subset(b %in% good_subject_id$b) 
+rm(good_subject_id)
+selected_df$b %>% unique() %>% length() #16079
+
+
+# filter: DCL < 4
+good_subject_id = selected_df %>% 
+  filter(visit==1) %>%
+  # mutate(baseline_DCL = factor(baseline_DCL)) %>%
+  # summary()
+  filter(baseline_DCL < 4) %>%
+  select(b)
+selected_df = selected_df %>%
+  subset(b %in% good_subject_id$b) 
+rm(good_subject_id)
+selected_df$b %>% unique() %>% length() # 5717
+
+# filter: baseline TMS != NA
+`%!in%` = Negate(`%in%`)
+
+bad_subject_id = selected_df %>% 
+  subset(is.na(TMS) | is.na(SDMT) | is.na(age)) %>%
+  select(b)
+selected_df = selected_df %>%
+  subset(b %!in% bad_subject_id$b) 
+rm(bad_subject_id)
+selected_df$b %>% unique() %>% length() #3719
+
+# filter those with an error code for SDMT
+bad_subject_id = selected_df %>% 
+  subset(SDMT == 9998) %>%
+  select(b)
+selected_df = selected_df %>%
+  subset(b %!in% bad_subject_id$b) 
+rm(bad_subject_id)
+selected_df$b %>% unique() %>% length() #3718
+
+# filter those with an error code for SWR
+bad_subject_id = selected_df %>% 
+  subset(SWR == 9996 | SWR == 9997 | SWR == 9998) %>%
+  select(b)
+selected_df = selected_df %>%
+  subset(b %!in% bad_subject_id$b) 
+rm(bad_subject_id)
+selected_df$b %>% unique() %>% length() #3701
+
+
+# filter those with an error code for SDMT
+bad_subject_id = data_enroll %>% 
+  subset(SDMT == 9998 | SDMT == 9997 | SDMT == 9996) %>%
+  select(b)
+selected_df = selected_df %>%
+  subset(b %!in% bad_subject_id$b) 
+rm(bad_subject_id)
+selected_df$b %>% unique() %>% length() #3701
+
+
+# number of subjects after applying exclusion criteria (3701)
+selected_df$b %>% unique() %>% length() 
+
+
+
+## end of inclusion and exclusion criteria
+################################################################################
+
+################################################################################
+## calculate basic study statistics 
+#(number of participants, number of visits, etc)
+
+
+# calculate proportion observed
+selected_df %>%
+  # get first observation for each subject
+  group_by(b) %>%
+  slice_head(n = 1) %>%
+  ungroup() %>%
+  select(delta) %>%
+  summary()
+
+# only 15.41 % had the outcome observed during the study
+
+# total number of visits
+nrow(selected_df) #9866
+# table of numbesr of visits per patient
+table(selected_df%>%group_by(b)%>%summarise(max(visit))%>%select('max(visit)'))
+# avg number of visits
+mean(selected_df$visit) # 2.33
+# median number of visits
+median(selected_df$visit) # 2
+# median and mean time between visits
+df <- selected_df %>%
+  group_by(b) %>%
+  mutate(Diff = visdy - lag(visdy))%>%filter(visdy!=0)
+mean(df$Diff)
+median(df$Diff)
+
