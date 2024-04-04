@@ -1,6 +1,17 @@
+################################
+##### 01 - ENROLL dataprep #####
+################################
+
+## This script does initial processing of the ENROLL-HD dataset
+## and applies initial inclusion/exclusion critera to create the dataset
+## used as input for the simulation analysis
+
+
 # clear workspace
 rm(list = ls())
 library(dplyr)
+
+print("Processing ENROLL-HD Dataset")
 
 # # General participant related data, some of 
 # # which may be annually updated. This
