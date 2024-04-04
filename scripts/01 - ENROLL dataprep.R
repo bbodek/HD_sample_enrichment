@@ -57,7 +57,9 @@ data_baseline = data_enroll %>%
          baseline_DCL = DCL,
          baseline_TMS = TMS,
          baseline_SDMT = SDMT,
-         baseline_CAG = cag) %>%
+         baseline_CAG = cag,
+         baseline_TFCS = TFCS,
+         baseline_SWR = SWR) %>%
   select(b, contains("baseline"))
 
 # join baseline data to model dataset by SUBJID
@@ -116,6 +118,15 @@ data_enroll = data_enroll %>%
 # create PIN score variables at baseline and for all visits
 data_enroll = data_enroll %>%
   mutate(PIN = (51*TMS-34*SDMT+7*CAP-883)/1044,baseline_PIN = (51*baseline_TMS-34*baseline_SDMT+7*baseline_CAP-883)/1044)
+
+# calculate cUHDRS at baseline and for all visits
+cuhdrs_calc<-function(TFC,TMS,SDMT,SWR){
+  cuhdrs<-((TFC-10.4)/1.9-(TMS-29.7)/14.9+(SDMT-28.3)/11.3+(SWR-66.1)/20.1)+10
+  return(cuhdrs)
+}
+
+data_enroll = data_enroll %>% rowwise()%>%
+  mutate(baseline_cuhdrs = cuhdrs_calc(baseline_TFCS,baseline_TMS,baseline_SDMT,baseline_SWR),cuhdrs = cuhdrs_calc(TFCS,TMS,SDMT,SWR))
 
 ## APPLY EXCLUSION CRITERIA FROM LONG ET AL (2017)
 
@@ -192,6 +203,15 @@ selected_df$b %>% unique() %>% length() #3701
 # filter those with an error code for SDMT
 bad_subject_id = data_enroll %>% 
   subset(SDMT == 9998 | SDMT == 9997 | SDMT == 9996) %>%
+  select(b)
+selected_df = selected_df %>%
+  subset(b %!in% bad_subject_id$b) 
+rm(bad_subject_id)
+selected_df$b %>% unique() %>% length() #3701
+
+# filter those without a baseline cuhdrs
+bad_subject_id = data_enroll %>% 
+  subset(is.na(baseline_cuhdrs)) %>%
   select(b)
 selected_df = selected_df %>%
   subset(b %!in% bad_subject_id$b) 
