@@ -1,10 +1,12 @@
-#######################################
-##### 02 - Threshold Calculations #####
-#######################################
+##################################
+##### 02 - Sample Enrichment #####
+##################################
 
 ## This script calculates the thresholds to be used as sample enrichment critera
 ## based off of median CAP and PIN values in the eligible participants
-## within the ENROLL-HD dataset
+## within the ENROLL-HD dataset.
+## Then, 3 sub-cohorts are created, one for each enrichment strategy
+## (PIN-enrichment, CAP-enrichment, and Unenriched)
 
 print("Calculating Thresholds for PIN and CAP")
 
@@ -26,16 +28,24 @@ pin.threshold<-as.numeric(q.pin[2])
 print("PIN Threshold: ")
 print(pin.threshold)
 
+
+# create unenriched sub-cohort
+unenriched.subco<-baseline_df
+# create CAP-enriched sub-cohort
+capenriched.subco<-baseline_df%>%filter(baseline_CAP>cap.threshold)
+# create CAP-enriched sub-cohort
+pinenriched.subco<-baseline_df%>%filter(baseline_PIN>pin.threshold)
+
 # total number of eligible participants
 print("Total number of eligible participants:")
-print(baseline_df%>%nrow())
+print(unenriched.subco%>%nrow())
 
 
 # number of eligible participants with baseline cap above threshold
 print("Number of CAP eligible participants:")
-print(baseline_df%>%filter(baseline_CAP>q_cap[2])%>%nrow())
+print(capenriched.subco%>%nrow())
 # eligible participants with baseline PIN abovse threshold
 print("Number of PIN eligible participants")
-print(baseline_df%>%filter(baseline_PIN>q_pin[2])%>%nrow())
+print(pinenriched.subco%>%nrow())
 
 
