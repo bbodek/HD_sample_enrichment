@@ -30,22 +30,24 @@ print(pin.threshold)
 
 
 # create unenriched sub-cohort
-unenriched.subco<-baseline_df
+unenriched_df<-selected_df
 # create CAP-enriched sub-cohort
-capenriched.subco<-baseline_df%>%filter(baseline_CAP>cap.threshold)
-# create CAP-enriched sub-cohort
-pinenriched.subco<-baseline_df%>%filter(baseline_PIN>pin.threshold)
+capenriched_df<-selected_df%>%
+  filter(baseline_CAP>cap.threshold)
+# create PIN-enriched sub-cohort
+pinenriched_df<-selected_df%>%
+  filter(baseline_PIN>pin.threshold)
 
 # total number of eligible participants
 print("Total number of eligible participants:")
-print(unenriched.subco%>%nrow())
+print(unenriched_df%>%select(subjid)%>%unique()%>%nrow())
 
 
 # number of eligible participants with baseline cap above threshold
 print("Number of CAP eligible participants:")
-print(capenriched.subco%>%nrow())
+print(capenriched_df%>%select(subjid)%>%unique()%>%nrow())
 # eligible participants with baseline PIN abovse threshold
 print("Number of PIN eligible participants")
-print(pinenriched.subco%>%nrow())
+print(pinenriched_df%>%select(subjid)%>%unique()%>%nrow())
 
 

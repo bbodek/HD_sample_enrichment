@@ -7,6 +7,6 @@
 
 library(lme4)
 # define linear mixed effects model formula to be used
-f<- " ~ experienced.flag.long +num.nests+ (1 | DNA_ID)+ (1 |Beach), data = df.dispersion"
+f<- "cuhdrs ~ visdy + (1 | subjid)+ (visdy |subjid)"
 
-head(baseline_df)
+lmer(formula = f,data=unenriched.subco)
