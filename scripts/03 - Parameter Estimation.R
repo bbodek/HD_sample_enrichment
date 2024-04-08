@@ -17,17 +17,17 @@ f<- "cuhdrs ~ 1+ vis.yr + (1 + vis.yr| subjid)"
 capenriched_2viz <- capenriched_df %>%
   group_by(subjid) %>%
   filter(max(visit) > 1 )%>%ungroup()
-nrow(capenriched_2viz%>%select(subjid)%>%unique())
+nrow(capenriched_2viz%>%dplyr::select(subjid)%>%unique())
 
 pinenriched_2viz <- pinenriched_df %>%
   group_by(subjid) %>%
   filter(max(visit) > 1 )
-nrow(pinenriched_2viz%>%select(subjid)%>%unique())
+nrow(pinenriched_2viz%>%dplyr::select(subjid)%>%unique())
 
 unenriched_2viz <- unenriched_df %>%
   group_by(subjid) %>%
   filter(max(visit) > 1)
-nrow(unenriched_2viz%>%select(subjid)%>%unique())
+nrow(unenriched_2viz%>%dplyr::select(subjid)%>%unique())
 
 # create variable vis.yr as visdy/365 to go from days to years
 capenriched_2viz$vis.yr<-capenriched_2viz$visdy/365
