@@ -6,6 +6,8 @@
 ## parameter estimates to be used in the power simulation
 
 library(lme4)
+library(tidyverse)
+source("scripts/simulation_helper_functions.R")
 
 # define linear mixed effects model formula to be used
 f<- "cuhdrs ~ 1+ vis.yr + (1 + vis.yr| subjid)"
@@ -14,7 +16,7 @@ f<- "cuhdrs ~ 1+ vis.yr + (1 + vis.yr| subjid)"
 # for each sub cohort
 capenriched_2viz <- capenriched_df %>%
   group_by(subjid) %>%
-  filter(max(visit) > 1 )
+  filter(max(visit) > 1 )%>%ungroup()
 nrow(capenriched_2viz%>%select(subjid)%>%unique())
 
 pinenriched_2viz <- pinenriched_df %>%

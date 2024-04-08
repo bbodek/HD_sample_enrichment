@@ -9,7 +9,8 @@
 
 # clear workspace
 rm(list = ls())
-library(dplyr)
+library(tidyverse)
+
 
 print("Processing ENROLL-HD Dataset")
 
@@ -18,7 +19,7 @@ print("Processing ENROLL-HD Dataset")
 # # includes: Demographics, HDCC 
 # # (HD clinical characteristics), CAG, Mortality
 data_profile = read.csv("G:/projects/enroll-hd/DATA-00000464 - Enroll-HD PDS5-R2 Study Dataset/Enroll-HD-Periodic-Dataset-2020-10-R2/profile.csv", sep = "\t") %>%
-  select(subjid, sex, race, caghigh) %>%
+  dplyr::select(subjid, sex, race, caghigh) %>%
   mutate(sex = ifelse(sex == "f",1,0), 
          # race = ifelse(race > 3 | race == 2,4,race))
          race = ifelse(race ==1,1,0))
@@ -26,7 +27,7 @@ data_profile = read.csv("G:/projects/enroll-hd/DATA-00000464 - Enroll-HD PDS5-R2
 
 # data about ENROLL
 data_enroll = read.csv("G:/projects/enroll-hd/DATA-00000464 - Enroll-HD PDS5-R2 Study Dataset/Enroll-HD-Periodic-Dataset-2020-10-R2/enroll.csv", sep = "\t") %>% 
-  select(subjid, seq, motscore, sdmt1,tfcscore, age, diagconf,visdy,swrt1)
+  dplyr::select(subjid, seq, motscore, sdmt1,tfcscore, age, diagconf,visdy,swrt1)
 
 # combine the datasets 
 data_enroll = data_enroll %>%
@@ -60,7 +61,7 @@ data_baseline = data_enroll %>%
          baseline_CAG = cag,
          baseline_TFCS = TFCS,
          baseline_SWR = SWR) %>%
-  select(subjid, contains("baseline"))
+  dplyr::select(subjid, contains("baseline"))
 
 # join baseline data to model dataset by SUBJID
 data_enroll = data_baseline %>%
@@ -97,7 +98,7 @@ data_censored = data_enroll %>%
   group_by(subjid) %>%
   slice_tail() %>%
   mutate(C = as.numeric(age)) %>%
-  select(subjid, C) 
+  dplyr::select(subjid, C) 
 
 # join censoring time to model dataset by SUBJID
 data_enroll = data_censored %>%
@@ -137,7 +138,7 @@ data_enroll$subjid %>% unique() %>% length()
 data_age = data_enroll %>%
   filter(visit == 1) %>%
   filter(baseline_age != "<18") %>%
-  select(subjid)
+  dplyr::select(subjid)
 
 selected_df = data_enroll
 
@@ -151,7 +152,7 @@ selected_df$subjid %>% unique() %>% length() #21086
 good_subject_id = selected_df %>% 
   filter(visit==1) %>%
   filter(cag >= 36) %>%
-  select(subjid)
+  dplyr::select(subjid)
 selected_df = selected_df %>%
   subset(subjid %in% good_subject_id$subjid) 
 rm(good_subject_id)
@@ -164,7 +165,7 @@ good_subject_id = selected_df %>%
   # mutate(baseline_DCL = factor(baseline_DCL)) %>%
   # summary()
   filter(baseline_DCL < 4) %>%
-  select(subjid)
+  dplyr::select(subjid)
 selected_df = selected_df %>%
   subset(subjid %in% good_subject_id$subjid) 
 rm(good_subject_id)
@@ -175,7 +176,7 @@ selected_df$subjid %>% unique() %>% length() # 5717
 
 bad_subject_id = selected_df %>% 
   subset(is.na(TMS) | is.na(SDMT) | is.na(age)) %>%
-  select(subjid)
+  dplyr::select(subjid)
 selected_df = selected_df %>%
   subset(subjid %!in% bad_subject_id$subjid) 
 rm(bad_subject_id)
@@ -184,7 +185,7 @@ selected_df$subjid %>% unique() %>% length() #3719
 # filter those with an error code for SDMT
 bad_subject_id = selected_df %>% 
   subset(SDMT == 9998) %>%
-  select(subjid)
+  dplyr::select(subjid)
 selected_df = selected_df %>%
   subset(subjid %!in% bad_subject_id$subjid) 
 rm(bad_subject_id)
@@ -193,7 +194,7 @@ selected_df$subjid %>% unique() %>% length() #3718
 # filter those with an error code for SWR
 bad_subject_id = selected_df %>% 
   subset(SWR == 9996 | SWR == 9997 | SWR == 9998) %>%
-  select(subjid)
+  dplyr::select(subjid)
 selected_df = selected_df %>%
   subset(subjid %!in% bad_subject_id$subjid) 
 rm(bad_subject_id)
@@ -203,7 +204,7 @@ selected_df$subjid %>% unique() %>% length() #3701
 # filter those with an error code for SDMT
 bad_subject_id = data_enroll %>% 
   subset(SDMT == 9998 | SDMT == 9997 | SDMT == 9996) %>%
-  select(subjid)
+  dplyr::select(subjid)
 selected_df = selected_df %>%
   subset(subjid %!in% bad_subject_id$subjid) 
 rm(bad_subject_id)
@@ -212,7 +213,7 @@ selected_df$subjid %>% unique() %>% length() #3701
 # filter those without a baseline cuhdrs
 bad_subject_id = data_enroll %>% 
   subset(is.na(baseline_cuhdrs)) %>%
-  select(subjid)
+  dplyr::select(subjid)
 selected_df = selected_df %>%
   subset(subjid %!in% bad_subject_id$subjid) 
 rm(bad_subject_id)
@@ -221,7 +222,7 @@ selected_df$subjid %>% unique() %>% length() #3701
 # filter those with TMS>20 or TFC<11 at baseline
 bad_subject_id = data_enroll %>% 
   subset(baseline_TMS>20 | baseline_TFCS<11) %>%
-  select(subjid)
+  dplyr::select(subjid)
 selected_df = selected_df %>%
   subset(subjid %!in% bad_subject_id$subjid) 
 rm(bad_subject_id)
@@ -246,7 +247,7 @@ selected_df %>%
   group_by(subjid) %>%
   slice_head(n = 1) %>%
   ungroup() %>%
-  select(delta) %>%
+  dplyr::select(delta) %>%
   summary()
 
 # only 15.41 % had the outcome observed during the study
@@ -254,7 +255,7 @@ selected_df %>%
 # total number of visits
 nrow(selected_df) #9866
 # table of numbesr of visits per patient
-table(selected_df%>%group_by(subjid)%>%summarise(max(visit))%>%select('max(visit)'))
+table(selected_df%>%group_by(subjid)%>%summarise(max(visit))%>%dplyr::select('max(visit)'))
 # avg number of visits
 mean(selected_df$visit) # 2.33
 # median number of visits

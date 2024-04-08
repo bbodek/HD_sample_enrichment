@@ -8,6 +8,8 @@
 ## Then, 3 sub-cohorts are created, one for each enrichment strategy
 ## (PIN-enrichment, CAP-enrichment, and Unenriched)
 
+
+library(tidyverse)
 print("Calculating Thresholds for PIN and CAP")
 
 # create dataset of only baseline observations
@@ -45,14 +47,14 @@ pinenriched_df<-selected_df%>%
 
 # total number of eligible participants
 print("Total number of eligible participants:")
-print(unenriched_df%>%select(subjid)%>%unique()%>%nrow())
+print(unenriched_df%>%dplyr::select(subjid)%>%unique()%>%nrow())
 
 
 # number of eligible participants with baseline cap above threshold
 print("Number of CAP eligible participants:")
-print(capenriched_df%>%select(subjid)%>%unique()%>%nrow())
+print(capenriched_df%>%dplyr::select(subjid)%>%unique()%>%nrow())
 # eligible participants with baseline PIN abovse threshold
 print("Number of PIN eligible participants")
-print(pinenriched_df%>%select(subjid)%>%unique()%>%nrow())
+print(pinenriched_df%>%dplyr::select(subjid)%>%unique()%>%nrow())
 
 
