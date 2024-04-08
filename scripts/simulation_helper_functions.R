@@ -35,7 +35,25 @@ extract.lme.parameters<-function(model,name){
   data.frame(model = name,fixed.int = fixed.int, fixed.slope = fixed.slope, 
              var.rndm.int = var.rndm.int,var.rndm.slope = var.rndm.slope,
              covar.rndm = covar.rndm)
-  }
+}
+
+# lme.y.dist is a function taking inputs:
+#   Z - a matrix of covariates for a single individual
+#   (including a column of 1's for the intercept)
+#   beta - a list containing the model coefficients from an LME
+#   D - the covariance matrix of the random effects
+#   sigma.2 - the estimated residual variance
+# The function returns the resulting expected Y vector mu and the associate 
+#  covariance matrix cov.Y
+lme.y.dist<-function(Z,beta, D, sigma.2){
+  # calculate mean vector 
+  mu<-Z%*%beta
+  # create identity matrix of size n = # of rows in Z
+  I<-diag(nrow(Z))
+  cov.Y<-Z%*%D%*%t(Z)+sigma.2*I
+  return(list(mu = mu, cov.Y = cov.Y))
+}
+
 
 
 
