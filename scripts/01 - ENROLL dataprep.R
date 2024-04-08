@@ -218,6 +218,14 @@ selected_df = selected_df %>%
 rm(bad_subject_id)
 selected_df$subjid %>% unique() %>% length() #3701
 
+# filter those with TMS>20 or TFC<11 at baseline
+bad_subject_id = data_enroll %>% 
+  subset(baseline_TMS>20 | baseline_TFCS<11) %>%
+  select(subjid)
+selected_df = selected_df %>%
+  subset(subjid %!in% bad_subject_id$subjid) 
+rm(bad_subject_id)
+selected_df$subjid %>% unique() %>% length() #3701
 
 # number of subjects after applying exclusion criteria (3701)
 selected_df$subjid %>% unique() %>% length() 
