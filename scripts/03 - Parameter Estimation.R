@@ -45,5 +45,6 @@ cap.params<-extract.lme.parameters(cap.model,"CAP")
 pin.params<-extract.lme.parameters(pin.model,"PIN")
 unenriched.params<-extract.lme.parameters(unenriched.model,"Unenriched")
 params.df<-rbind(cap.params,pin.params,unenriched.params)
-
+# write parameter dataframe to a csv
+write.csv(params.df,"./data/parameters_estimates.csv",row.names = F)
 
