@@ -29,6 +29,11 @@ print("PIN Threshold: ")
 print(pin.threshold)
 
 
+hist(baseline_df$TMS)
+hist(baseline_df$SDMT)
+hist(baseline_df$SWR)
+hist(baseline_df$TFCS)
+
 # create unenriched sub-cohort
 unenriched_df<-selected_df
 # create CAP-enriched sub-cohort

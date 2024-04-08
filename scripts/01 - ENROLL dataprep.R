@@ -258,3 +258,4 @@ df <- selected_df %>%
 mean(df$Diff)
 median(df$Diff)
 
+summary(selected_df$TMS)
