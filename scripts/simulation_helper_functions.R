@@ -1,9 +1,4 @@
-library(MASS)
-
-
-sigma<-matrix(c(1,0.5,0.5,1),nrow=2,byrow = T)
-R<-chol(sigma)
-
+library(tidyverse)
 
 # mvn.sim is a function taking inputs:
 #   n - the number of simulated values to return
@@ -31,10 +26,10 @@ extract.lme.parameters<-function(model,name){
   var.rndm.int<-vc[1,4]
   var.rndm.slope<-vc[2,4]
   covar.rndm<-vc[3,4]
-  var.rndm.int<-vc[4,4]
+  var.res<-vc[4,4]
   data.frame(model = name,fixed.int = fixed.int, fixed.slope = fixed.slope, 
              var.rndm.int = var.rndm.int,var.rndm.slope = var.rndm.slope,
-             covar.rndm = covar.rndm)
+             covar.rndm = covar.rndm,var.res = var.res)
 }
 
 # lme.y.dist is a function taking inputs:
@@ -54,7 +49,36 @@ lme.y.dist<-function(Z,beta, D, sigma.2){
   return(list(mu = mu, cov.Y = cov.Y))
 }
 
-
+# sim.param.inputs is a function taking inputs:
+#   parameter.df - a dataframe containing the parameter estimates from LME models
+#   model - the name of the model to simulate from
+# The function returns the resulting mu vector and R matrix 
+# (the cholsky decomposition of the covariance matrix which is used as input into 
+# the function to simulate from a multivariate normal distribution)
+sim.param.inputs<-function(parameter.df,subcohort){
+  # extract fixed effects
+  beta<-unlist(parameter.df%>%filter(model == subcohort)%>%
+                 dplyr::select(fixed.int,fixed.slope))
+  # create matrix of covariates
+  Z<-matrix(c(1,0,1,0.5,1,1,1,1.5,1,2),nrow=5,byrow=T)
+  # extract variance and covariance of random effects
+  sigma11<-unlist(parameter.df%>%filter(model == subcohort)%>%
+                    dplyr::select(var.rndm.int))
+  sigma22<-unlist(parameter.df%>%filter(model == subcohort)%>%
+                    dplyr::select(var.rndm.slope))
+  sigma12<-unlist(parameter.df%>%filter(model == subcohort)%>%
+                    dplyr::select(covar.rndm))
+  sigma<-unlist(parameter.df%>%filter(model == subcohort)%>%dplyr::select(var.res))
+  D<-matrix(c(sigma11,sigma12,sigma12,sigma22),nrow=2,byrow=T)
+  # extract residual variance
+  sigma.2<-unlist(parameter.df%>%filter(model == subcohort)%>%
+                    dplyr::select(var.res))
+  # calculate mu and cov.Y
+  params<-lme.y.dist(Z,beta,D,sigma.2)
+  mu<-params$mu
+  R<-chol(params$cov.Y)
+  return(list(mu = mu, R = R))
+}
 
 
 
