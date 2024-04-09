@@ -1,4 +1,5 @@
 library(tidyverse)
+library(lmerTest)
 
 # mvn.sim is a function taking inputs:
 #   n - the number of simulated values to return
@@ -87,12 +88,37 @@ sim.param.inputs<-function(parameter.df,subcohort,treatment.flag = 0){
   return(list(mu = mu, R = R))
 }
 
+# sim.hypothesis.test is a function taking inputs:
+#   n - total number of participants
+#   n.treat - number of participants assigned to the treatment group
+#   R - the cholesky decomposition of the covariance matrix
+#   mu.treat - the mean vector for the treated group
+#   mu.control - the mean vector for the untreated group
+# The function fits simulates data for the treatment and control groups,
+# fit an LME model with random slope and intercept and conducts a
+# hypothesis test on the parameter of the treatment by time interaction turn
+# It returns a 1 if the resulting hypothesis test successfully rejects 
+# the null and a 0 if it fails to reject the null
+sim.hypothesis.test<-function(n.control,n.treat,R,mu.control,mu.treat){
+  n<-n.treat+n.control
+  # create simulated data for treated group
+  treated<-mvn.sim(n.treat,R,mu.treat)
+  # create simulated data for control group
+  control<-mvn.sim(n.control,R,mu.control)
+  # turn into a concatenated vector
+  outcome.vec<-c(t(treated),t(control))
+  # create vector of subjids
+  subjid<-rep(1:n,each=5)
+  # create vector of timepoints at each observation
+  vis.yr<-rep(c(0,0.5,1,1.5,2),n)
+  # vector of treatment flags to indicate group membership
+  trt.flg<-c(rep(1,n.treat*5),rep(0,n.control*5))
+  # fit model and return p value for coefficient relating to treatment effect
+  model<-lmer(outcome.vec~1 + vis.yr + vis.yr:trt.flg + (1+vis.yr|subjid) )
+  p.val<-summary(model)$coefficients["vis.yr:trt.flg", "Pr(>|t|)"]
+  # return 1 if p value < 0.05, 0 otherwise
+  return(ifelse(p.val<0.05,1,0))
+}
 
-# hyp.test is a function taking inputs:
-#   parameter.df - a dataframe containing the parameter estimates from LME models
-#   model - the name of the model to simulate from
-# The function returns the resulting mu vector and R matrix 
-# (the cholsky decomposition of the covariance matrix which is used as input into 
-# the function to simulate from a multivariate normal distribution)
 
 
