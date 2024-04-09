@@ -7,7 +7,7 @@ library(tidyverse)
 # The function returns a matrix of n simulated values from a multivariate normal 
 # distribution with mean vector mu and covariance R%*%t(R)
 mvn.sim<-function(n,R,mu){
-  X = t(R)%*%matrix(rnorm(n*5),5)+matrix(rep(mu,n),nrow=2,byrow=F)
+  X = t(R)%*%matrix(rnorm(n*5),nrow = 5)+matrix(rep(mu,n),nrow=5,byrow=F)
   X = t(X)
 }
 
@@ -52,13 +52,20 @@ lme.y.dist<-function(Z,beta, D, sigma.2){
 # sim.param.inputs is a function taking inputs:
 #   parameter.df - a dataframe containing the parameter estimates from LME models
 #   model - the name of the model to simulate from
+#   treatment.flag - indicates if want to simulate from the control (=0)
+#      or treatment group (=1)
 # The function returns the resulting mu vector and R matrix 
 # (the cholsky decomposition of the covariance matrix which is used as input into 
 # the function to simulate from a multivariate normal distribution)
-sim.param.inputs<-function(parameter.df,subcohort){
+sim.param.inputs<-function(parameter.df,subcohort,treatment.flag = 0){
   # extract fixed effects
   beta<-unlist(parameter.df%>%filter(model == subcohort)%>%
                  dplyr::select(fixed.int,fixed.slope))
+  # simulate treatment effect of 30% if treatment.flag == 1 by multiplying 
+  # slope by 0.7
+  if(treatment.flag==1){
+    beta[2] = 0.7*beta[2]
+  }
   # create matrix of covariates
   Z<-matrix(c(1,0,1,0.5,1,1,1,1.5,1,2),nrow=5,byrow=T)
   # extract variance and covariance of random effects
@@ -81,5 +88,11 @@ sim.param.inputs<-function(parameter.df,subcohort){
 }
 
 
+# hyp.test is a function taking inputs:
+#   parameter.df - a dataframe containing the parameter estimates from LME models
+#   model - the name of the model to simulate from
+# The function returns the resulting mu vector and R matrix 
+# (the cholsky decomposition of the covariance matrix which is used as input into 
+# the function to simulate from a multivariate normal distribution)
 
 
