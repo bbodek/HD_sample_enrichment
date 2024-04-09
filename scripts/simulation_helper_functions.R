@@ -7,7 +7,7 @@ library(tidyverse)
 # The function returns a matrix of n simulated values from a multivariate normal 
 # distribution with mean vector mu and covariance R%*%t(R)
 mvn.sim<-function(n,R,mu){
-  X = t(R)%*%matrix(rnorm(n*2),2)+matrix(rep(mu,n),nrow=2,byrow=F)
+  X = t(R)%*%matrix(rnorm(n*5),5)+matrix(rep(mu,n),nrow=2,byrow=F)
   X = t(X)
 }
 
