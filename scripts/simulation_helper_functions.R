@@ -117,8 +117,53 @@ sim.hypothesis.test<-function(n.control,n.treat,R,mu.control,mu.treat){
   model<-lmer(outcome.vec~1 + vis.yr + vis.yr:trt.flg + (1+vis.yr|subjid) )
   p.val<-summary(model)$coefficients["vis.yr:trt.flg", "Pr(>|t|)"]
   # return 1 if p value < 0.05, 0 otherwise
-  return(ifelse(p.val<0.05,1,0))
+  return(ifelse(p.val<=0.05,1,0))
 }
+
+# approx.sample.calc is a function taking inputs:
+#   parameter.df- the dataframe of parameter estimates
+#   param.model - the name of the model from which to grab parameter estimates 
+#           for sample size calculations
+#   effect.size - the desired effect size as a rate of change in slope (between 0 and 1)
+#   trt.prop - the proportion of participants recieving treatment
+#   power - the desired power (between 0 and 1)
+#   alpha - the desired type I error rate 
+#   num.visits - the total number of study visits
+#   study.duration - study duration in years
+# The function returns an approximate sample size necessary to reach the desired
+# power while maintaining the desired type I error rate.
+# See "Applied Longitudinal Analysis" by Fitzmaurice, Laird, and Ware pg 585
+# for more details
+approx.sample.calc<-function(parameter.df, param.model,effect.size,trt.prop=0.5,
+                             power = 0.9,alpha = 0.05,
+                             num.visits,study.duration){
+  # grab the residual variance
+  sigma2.epsilon<-unlist(parameter.df%>%
+                           filter(model == param.model)%>%
+                           select(var.res))
+  # grab the variance of the random slope
+  g.22<-unlist(parameter.df%>%
+                 filter(model == param.model)%>%
+                 select(var.rndm.slope))
+  # calculate the effect size as a change in slope
+  delta<-unlist(parameter.df%>%
+                  filter(model == param.model)%>%
+                  select(fixed.slope))*effect.size
+  # calculate the variance of the individual slope estimate
+  time.sum<-study.duration^2*num.visits*(num.visits+1)/(12*(num.visits-1))
+  sigma.2.beta<-sigma2.epsilon/time.sum+g.22
+  # calculate z values for power and type I error
+  z.alpha<-qnorm(1-alpha/2)
+  z.power<-qnorm(power)
+  # calculate approximate sample size
+  N<-sigma.2.beta*(z.alpha+z.power)^2/(trt.prop*(1-trt.prop)*delta^2)
+  N  
+}
+
+
+
+
+
 
 
 
