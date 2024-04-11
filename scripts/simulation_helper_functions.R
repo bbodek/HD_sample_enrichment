@@ -164,8 +164,7 @@ approx.sample.calc<-function(parameter.df, param.model,effect.size,trt.prop=0.5,
 simulate<-function(n.sim,model,lower.n,upper.n, increment){
   column_names <- c("n", "Power", "Alpha")
   # Initialize an empty dataframe with predefined column names but no rows
-  summary_df <- data.frame(matrix(ncol = length(column_names), nrow = 0))
-  colnames(summary_df) <- column_names
+  summary_df <- data.frame(n = 0, power = 0, alpha = 0)
   # gather parameters needed for the simulation
   R<-sim.param.inputs(params.df,model,treatment.flag = 0)$R
   mu.control<-sim.param.inputs(params.df,model,treatment.flag = 0)$mu
@@ -177,16 +176,18 @@ simulate<-function(n.sim,model,lower.n,upper.n, increment){
     n.treat<-rbinom(1,n,0.5)
     n.control<-n-n.treat
     # run n.sim simulations using parallelization
-    res <- foreach(i=1:n.sim, .combine = rbind,.packages = c("lmerTest")) %dorng% {
+    res <- foreach(i=1:n.sim, .combine = rbind,.packages = c("lmerTest"),
+                   .export=c("sim.hypothesis.test","mvn.sim","extract.lme.parameters",
+                             "lme.y.dist","sim.param.inputs","approx.sample.calc")) %dorng% {
       # simulate hypothesis test results under alternative hypothesis
       result.alt<-sim.hypothesis.test(n.control = n.control,n.treat = n.treat,R = R,
                                       mu.control = mu.control,mu.treat = mu.treat)
       # simulated hypothesis test results under the null hypothesis
-      #   result.null<-sim.hypothesis.test(n.control = n.control,n.treat = n.treat,R = R,
-      #                                  mu.control = mu.control,mu.treat = mu.control)
+      result.null<-sim.hypothesis.test(n.control = n.control,n.treat = n.treat,R = R,
+                                       mu.control = mu.control,mu.treat = mu.control)
       # create data frame of results
       data.frame(sample_size = n, iteration = i, 
-                 #hypothesis.test.null = result.null,
+                 hypothesis.test.null = result.null,
                  hypothesis.test.alt = result.alt)
     }
     # turn all results into dataframe
