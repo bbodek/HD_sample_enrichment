@@ -161,6 +161,46 @@ approx.sample.calc<-function(parameter.df, param.model,effect.size,trt.prop=0.5,
 }
 
 
+simulate<-function(n.sim,model,lower.n,upper.n, increment){
+  column_names <- c("n", "Power", "Alpha")
+  # Initialize an empty dataframe with predefined column names but no rows
+  summary_df <- data.frame(matrix(ncol = length(column_names), nrow = 0))
+  colnames(summary_df) <- column_names
+  # gather parameters needed for the simulation
+  R<-sim.param.inputs(params.df,model,treatment.flag = 0)$R
+  mu.control<-sim.param.inputs(params.df,model,treatment.flag = 0)$mu
+  mu.treat<-sim.param.inputs(params.df,model,treatment.flag = 1)$mu
+  # repeat for sequence of sample sizes
+  for(n in seq(lower.n,upper.n, by = increment)){
+    # select number of treated and control participants by assigning treatment 
+    # with 50% probability
+    n.treat<-rbinom(1,n,0.5)
+    n.control<-n-n.treat
+    # run n.sim simulations using parallelization
+    res <- foreach(i=1:n.sim, .combine = rbind,.packages = c("lmerTest")) %dorng% {
+      # simulate hypothesis test results under alternative hypothesis
+      result.alt<-sim.hypothesis.test(n.control = n.control,n.treat = n.treat,R = R,
+                                      mu.control = mu.control,mu.treat = mu.treat)
+      # simulated hypothesis test results under the null hypothesis
+      #   result.null<-sim.hypothesis.test(n.control = n.control,n.treat = n.treat,R = R,
+      #                                  mu.control = mu.control,mu.treat = mu.control)
+      # create data frame of results
+      data.frame(sample_size = n, iteration = i, 
+                 #hypothesis.test.null = result.null,
+                 hypothesis.test.alt = result.alt)
+    }
+    # turn all results into dataframe
+    result_df<-as.data.frame(res)
+    power<-mean(result_df$hypothesis.test.alt)
+    alpha<-mean(result_df$hypothesis.test.null)
+    print(n)
+    print(power)
+    print(alpha)
+    summary_df<-rbind(summary_df,c(n,power,alpha))
+  }
+  summary_df
+}
+
 
 
 
