@@ -49,26 +49,27 @@ print('***********************************')
 
 unenriched_results<-simulate(n.sim=3600,model="Unenriched",
                              lower.n = round(unenriched.sapprox)-50,
-                             lower.n = round(unenriched.sapprox)+50, 
+                             upper.n = round(unenriched.sapprox)+50, 
                              increment=10)
 write.csv(file="data/unenriched_results.csv",unenriched_results,row.names=F)
 
 ### Sample size calculation for the CAP cohort ###
 print('CAP')
 print('***********************************')
-
+tic()
 cap_results<-simulate(n.sim=3600,model="CAP",
                              lower.n = round(cap.sapprox)-50,
-                             lower.n = round(cap.sapprox)+50, 
+                             upper.n = round(cap.sapprox)+50, 
                              increment=10)
 write.csv(file="data/cap_results.csv",cap_results,row.names=F)
-
+toc()
 ### Sample size calculation for the PIN cohort ###
 print('PIN')
 print('***********************************')
-
-cap_results<-simulate(n.sim=3600,model="PIN",
+tic()
+pin_results<-simulate(n.sim=3600,model="PIN",
                       lower.n = round(pin.sapprox)-50,
-                      lower.n = round(pin.sapprox)+50, 
+                      upper.n = round(pin.sapprox)+50, 
                       increment=10)
-write.csv(file = "data/pin_results.csv",test,row.names=F)
+write.csv(file = "data/pin_results.csv",pin_results,row.names=F)
+toc()
