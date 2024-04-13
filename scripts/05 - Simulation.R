@@ -8,12 +8,13 @@
 library(tidyverse)
 library(doParallel)
 library(doRNG)
+library(lmerTest)
 
 ## set up cluster for parallelization of the simulation
 # This detects the total number of cores available on the machine
 nworkers <- detectCores() 
 # use all available cores
-cl <- makePSOCKcluster(nworkers)
+cl <- makePSOCKcluster(nworkers-2)
 registerDoParallel(cl)
 source("scripts/simulation_helper_functions.R")
 
@@ -47,9 +48,9 @@ print(paste0("Approximate sample size for CAP cohort is ",
 print('UNENRICHED')
 print('***********************************')
 
-unenriched_results<-simulate(n.sim=3600,model="Unenriched",
-                             lower.n = round(unenriched.sapprox)-50,
-                             upper.n = round(unenriched.sapprox)+50, 
+unenriched_results<-simulate(n.sim=1000,model="Unenriched",
+                             lower.n = round(unenriched.sapprox)-150,
+                             upper.n = round(unenriched.sapprox)+150, 
                              increment=10)
 write.csv(file="data/unenriched_results.csv",unenriched_results,row.names=F)
 
@@ -57,9 +58,9 @@ write.csv(file="data/unenriched_results.csv",unenriched_results,row.names=F)
 print('CAP')
 print('***********************************')
 tic()
-cap_results<-simulate(n.sim=3600,model="CAP",
-                             lower.n = round(cap.sapprox)-50,
-                             upper.n = round(cap.sapprox)+50, 
+cap_results<-simulate(n.sim=1000,model="CAP",
+                             lower.n = round(cap.sapprox)-150,
+                             upper.n = round(cap.sapprox)+150, 
                              increment=10)
 write.csv(file="data/cap_results.csv",cap_results,row.names=F)
 toc()
@@ -67,9 +68,15 @@ toc()
 print('PIN')
 print('***********************************')
 tic()
-pin_results<-simulate(n.sim=3600,model="PIN",
-                      lower.n = round(pin.sapprox)-50,
-                      upper.n = round(pin.sapprox)+50, 
+pin_results<-simulate(n.sim = 1000,model="PIN",
+                      lower.n = round(pin.sapprox)-150,
+                      upper.n = round(pin.sapprox)+150, 
                       increment=10)
 write.csv(file = "data/pin_results.csv",pin_results,row.names=F)
 toc()
+
+
+# investigating results
+cap_results$lower_cl<-cap_results$power - 1.96*sqrt(cap_results$power*(1-cap_results$power)/3600)
+cap_results$upper_cl<-cap_results$power + sqrt(cap_results$power*(1-cap_results$power)/3600)
+cap_results
