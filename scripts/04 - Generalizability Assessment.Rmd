@@ -1,0 +1,114 @@
+---
+title: "04 - Generalizability Assessment"
+output: html_notebook
+---
+# Generalizability Assessment
+
+This R notebook conducts an assessment on the generalizability of results of clinical
+trials conducted using enrichment by comparing the demographic and clinical
+characteristics of participants eligible under each selection criteria.
+
+
+```{r}
+library(tidyverse)
+library(table1)
+library(xtable)
+```
+
+Data manipulation to create a table 1 of baseline characteristics across eligible
+participants. 
+
+## Table 1 comparing each eligible cohort
+```{r}
+# filter for only baseline observations
+baseline_unenriched<-unenriched_df%>%filter(visit==1)
+baseline_capenriched<-capenriched_df%>%filter(visit==1)
+baseline_pinenriched<-pinenriched_df%>%filter(visit==1)
+
+# create composite dataframe
+baseline_unenriched$cohort = 'Unenriched'
+baseline_pinenriched$cohort = 'PIN'
+baseline_capenriched$cohort = 'CAP'
+baseline_df<-as.data.frame(rbind(baseline_unenriched,
+                                 baseline_pinenriched,baseline_capenriched))
+# data manupulation for table one creation
+baseline_df$sex = ifelse(baseline_df$sex == 1, 'F','M')
+baseline_df$Race = ifelse(baseline_df$race == 1, 'Caucasian','Non-Caucasian')
+baseline_df$DCL = factor(baseline_df$DCL)
+
+table1::label(baseline_df$age)<- "Age"
+table1::label(baseline_df$sex)<- "Sex"
+table1::label(baseline_df$TMS)<- "Baseline Total Motor Score (TMS)"
+table1::label(baseline_df$SDMT)<- "Baseline Single Digit Modalities Test (SDMT)"
+table1::label(baseline_df$TFCS)<- "Baseline Total Functional Capacity"
+table1::label(baseline_df$DCL)<- "Baseline Diagnostic Confidence Level (DCL)"
+table1::label(baseline_df$TMS)<- "Baseline Total Motor Score (TMS)"
+table1::label(baseline_df$SWR)<- "Baseline Stroop Word Reading Test Score (SWR)"
+table1::label(baseline_df$PIN)<- "Baseline PIN"
+table1::label(baseline_df$CAP)<- "Baseline CAP"
+table1::label(baseline_df$cuhdrs)<- "Baseline cUHDRS"
+table1::label(baseline_df$cohort)<- "Subcohort"
+```
+
+```{r}
+# function for custom presentation of each variable in the table one
+# (ie mean vs median)
+rndr <- function(x, name, ...) {
+  if (!is.numeric(x)) return(render.categorical.default(x))
+  what <- switch(name,
+  age = "Mean (SD)",
+  TMS = "Median [Q1,Q3]",
+  SDMT = "Mean (SD)",
+  TFC = "Median [Q1,Q3]",
+  SWR = "Mean (SD)",
+  PIN = "Mean (SD)",
+  TFCS = "Median [Q1,Q3]",
+  CAP = "Mean (SD)",
+  cuhdrs = "Median [Q1,Q3]"
+  )
+  parse.abbrev.render.code(c("", what))(x)
+}
+
+# create table one
+x<-table1(~ sex + age + Race + TMS + SDMT + TFCS + DCL + TMS + SWR + PIN + CAP + 
+            cuhdrs | cohort, data = baseline_df,overall=F,render = rndr)
+# print to latex format
+xtable(as.data.frame(x))
+```
+```{r}
+# display x
+x
+```
+
+## Table 1 comparing eligible vs ineligible participants for each selection criteria
+
+```{r}
+baseline_unenriched<-baseline_df%>%filter(cohort=='Unenriched')
+baseline_unenriched$CAP_eligible<-factor(ifelse(baseline_unenriched$CAP>cap.threshold,1,0))
+baseline_unenriched$PIN_eligible<-factor(ifelse(baseline_unenriched$PIN>pin.threshold,1,0))
+
+table(baseline_unenriched$CAP_eligible,baseline_unenriched$PIN_eligible)
+
+table1::label(baseline_unenriched$age)<- "Age"
+table1::label(baseline_unenriched$sex)<- "Sex"
+table1::label(baseline_unenriched$TMS)<- "Baseline Total Motor Score (TMS)"
+table1::label(baseline_unenriched$SDMT)<- "Baseline Single Digit Modalities Test (SDMT)"
+table1::label(baseline_unenriched$TFCS)<- "Baseline Total Functional Capacity"
+table1::label(baseline_unenriched$DCL)<- "Baseline Diagnostic Confidence Level (DCL)"
+table1::label(baseline_unenriched$TMS)<- "Baseline Total Motor Score (TMS)"
+table1::label(baseline_unenriched$SWR)<- "Baseline Stroop Word Reading Test Score (SWR)"
+table1::label(baseline_unenriched$PIN)<- "Baseline PIN"
+table1::label(baseline_unenriched$CAP)<- "Baseline CAP"
+table1::label(baseline_unenriched$cuhdrs)<- "Baseline cUHDRS"
+table1::label(baseline_unenriched$cohort)<- "Subcohort"
+table1::label(baseline_unenriched$CAP_eligible)<- "Eligible for CAP group"
+table1::label(baseline_unenriched$PIN_eligible)<- "Eligible for PIN group"
+
+# create table one
+y<-table1(~ sex + age + Race + TMS + SDMT + TFCS + DCL + TMS + SWR + PIN + CAP + 
+            cuhdrs | CAP_eligible, data = baseline_unenriched,overall=F,render = rndr)
+# print to latex format
+xtable(as.data.frame(y))
+y
+```
+
