@@ -101,7 +101,7 @@ sim.param.inputs<-function(parameter.df,subcohort,treatment.flag = 0){
 # the null and a 0 if it fails to reject the null
 sim.hypothesis.test<-function(n.control,n.treat,R,mu.control,mu.treat){
   n<-n.treat+n.control
-  # create simulated data for treated group
+  # create simulated data for treated group under alternative hypothesis
   treated<-mvn.sim(n.treat,R,mu.treat)
   # create simulated data for control group
   control<-mvn.sim(n.control,R,mu.control)
@@ -114,7 +114,7 @@ sim.hypothesis.test<-function(n.control,n.treat,R,mu.control,mu.treat){
   # vector of treatment flags to indicate group membership
   trt.flg<-c(rep(1,n.treat*5),rep(0,n.control*5))
   # fit model and return p value for coefficient relating to treatment effect
-  model<-lmer(outcome.vec~1 + vis.yr + vis.yr:trt.flg + (1+vis.yr|subjid) )
+  model<-lmer(outcome.vec~1 + vis.yr + vis.yr:trt.flg + (1+vis.yr|subjid))
   p.val<-summary(model)$coefficients["vis.yr:trt.flg", "Pr(>|t|)"]
   # return 1 if p value < 0.05, 0 otherwise
   return(ifelse(p.val<=0.05,1,0))
@@ -171,14 +171,14 @@ simulate<-function(n.sim,model,lower.n,upper.n, increment){
   mu.treat<-sim.param.inputs(params.df,model,treatment.flag = 1)$mu
   # repeat for sequence of sample sizes
   for(n in seq(lower.n,upper.n, by = increment)){
-    # select number of treated and control participants by assigning treatment 
-    # with 50% probability
-    n.treat<-rbinom(1,n,0.5)
-    n.control<-n-n.treat
     # run n.sim simulations using parallelization
     res <- foreach(i=1:n.sim, .combine = rbind,.packages = c("lmerTest"),
                    .export=c("sim.hypothesis.test","mvn.sim","extract.lme.parameters",
-                             "lme.y.dist","sim.param.inputs","approx.sample.calc")) %dorng% {
+                             "lme.y.dist","sim.param.inputs","approx.sample.calc"))%dorng% {
+      # select number of treated and control participants by assigning treatment 
+      # with 50% probability
+      n.treat<-rbinom(1,n,0.5)
+      n.control<-n-n.treat
       # simulate hypothesis test results under alternative hypothesis
       result.alt<-sim.hypothesis.test(n.control = n.control,n.treat = n.treat,R = R,
                                       mu.control = mu.control,mu.treat = mu.treat)
