@@ -57,4 +57,6 @@ print(capenriched_df%>%dplyr::select(subjid)%>%unique()%>%nrow())
 print("Number of PIN eligible participants")
 print(pinenriched_df%>%dplyr::select(subjid)%>%unique()%>%nrow())
 
-
+# assess overlap between pin and cap enrichment groups
+capenriched_df%>%filter(subjid %in% unique(pinenriched_df$subjid))%>%
+  select(subjid)%>%unique()

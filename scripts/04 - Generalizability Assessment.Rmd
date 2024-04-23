@@ -84,8 +84,8 @@ x
 
 ```{r}
 baseline_unenriched<-baseline_df%>%filter(cohort=='Unenriched')
-baseline_unenriched$CAP_eligible<-factor(ifelse(baseline_unenriched$CAP>cap.threshold,1,0))
-baseline_unenriched$PIN_eligible<-factor(ifelse(baseline_unenriched$PIN>pin.threshold,1,0))
+baseline_unenriched$CAP_eligible<-factor(ifelse(baseline_unenriched$CAP>cap.threshold,'Eligible','Not Eligible'))
+baseline_unenriched$PIN_eligible<-factor(ifelse(baseline_unenriched$PIN>pin.threshold,'Eligible','Not Eligible'))
 
 table(baseline_unenriched$CAP_eligible,baseline_unenriched$PIN_eligible)
 
@@ -105,8 +105,16 @@ table1::label(baseline_unenriched$CAP_eligible)<- "Eligible for CAP group"
 table1::label(baseline_unenriched$PIN_eligible)<- "Eligible for PIN group"
 
 # create table one
-y<-table1(~ sex + age + Race + TMS + SDMT + TFCS + DCL + TMS + SWR + PIN + CAP + 
+y<-table1(~ sex + age + Race + TMS + SDMT + TFCS + DCL + TMS + SWR+ 
             cuhdrs | CAP_eligible, data = baseline_unenriched,overall=F,render = rndr)
+# print to latex format
+xtable(as.data.frame(y),booktabs=T)
+y
+```
+```{r}
+# create table one
+y<-table1(~ sex + age + Race + TMS + SDMT + TFCS + DCL + TMS + SWR + 
+            cuhdrs | PIN_eligible + CAP_eligible, data = baseline_unenriched,overall=F,render = rndr)
 # print to latex format
 xtable(as.data.frame(y))
 y

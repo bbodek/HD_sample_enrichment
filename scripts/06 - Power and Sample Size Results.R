@@ -8,7 +8,7 @@ library(stringr)
 # create overall list of files
 files<-list.files('data/',pattern = "results")
 # grab files which are for the alt hypothesis not null hypothesis
-files<-files[-grep('null',files)]
+#files<-files[-grep('null',files)]
 files
 
 sim_results<-data.frame()
@@ -19,7 +19,7 @@ for(file in files){
   sim_results<-rbind(sim_results,data)
 }
 # calculate monte carlo SE as sqrt(power*(1-power)/n.sim)
-sim_results$se<-(sqrt(sim_results$power*(1-sim_results$power)/3600))
+sim_results$se<-(sqrt(sim_results$power*(1-sim_results$power)/10000))
 sim_results$lower.ci<-sim_results$power-sim_results$se*1.96
 sim_results$upper.ci<-sim_results$power+sim_results$se*1.96
 sim_results$enrichment<-as.character(sim_results$enrichment)
@@ -47,22 +47,23 @@ power_plt<-ggplot(sim_results, aes(x = n, y = power,color=enrichment.type)) +
   geom_hline(yintercept = 0.9,color='red',linetype='dashed')+
   theme_bw()+
   theme(axis.text.x = element_text(angle = 60, vjust = 0.3, hjust=0.2),
-        plot.title=element_text(hjust=0.5))
+        plot.title=element_text(hjust=0.5),text = element_text(size = 15))
 
 power_plt
-ggsave("./figures/powercurve.png",plot=power_plt, width = 10, height = 5.5)
+ggsave("./figures/powercurve.png",plot=power_plt, width = 12, height = 5.5)
 
-sim_results_2<-sim_results%>%filter(lower.ci>0.85 & upper.ci<0.95)
+sim_results_2<-sim_results%>%filter(power>0.87 & power<0.92)
 
 power_plt_2<-ggplot(sim_results_2, aes(x = n, y = power,color=enrichment.type)) +
   geom_point() +
-  geom_errorbar(aes(ymin = power-se,ymax=power+se),width=20)+
+  geom_errorbar(aes(ymin = power-se,ymax=power+se),width=15)+
   #geom_crossbar(aes(y=power, ymin = lower.ci, ymax = upper.ci), width = 1)+
   labs(title = "Power Estimates with Standard Error by Enrichment Type", x = "Sample Size", y = "Power") +
   scale_color_manual(values=cbbPalette,guide='none')+
-  theme(plot.title=element_text(hjust=0.5))+
-  ylim(0.86,0.94)+
-  facet_wrap(~enrichment.type, scales = 'free_x',ncol = 3)+
+  theme(plot.title=element_text(hjust=0.5),text = element_text(size = 14),
+        axis.text.x = element_text(angle = 90, vjust = 0.3, hjust=0.2))+
+  ylim(0.86,0.93)+
+  facet_grid(~enrichment.type, scales = 'free_x')+
   # add a line at 90% power
   geom_hline(yintercept = 0.9,color='red',linetype='dashed')
 power_plt_2

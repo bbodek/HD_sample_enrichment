@@ -9,7 +9,7 @@ library(tidyverse)
 library(doParallel)
 library(doRNG)
 library(lmerTest)
-
+library(tictoc)
 ## set up cluster for parallelization of the simulation
 # This detects the total number of cores available on the machine
 nworkers <- detectCores() 
@@ -79,4 +79,6 @@ toc()
 # investigating results
 cap_results$lower_cl<-cap_results$power - 1.96*sqrt(cap_results$power*(1-cap_results$power)/3600)
 cap_results$upper_cl<-cap_results$power + sqrt(cap_results$power*(1-cap_results$power)/3600)
-cap_results
+
+
+

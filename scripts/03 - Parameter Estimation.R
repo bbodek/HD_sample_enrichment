@@ -6,6 +6,7 @@
 ## parameter estimates to be used in the power simulation
 
 library(lme4)
+library(lmerTest)
 library(tidyverse)
 source("scripts/simulation_helper_functions.R")
 
@@ -38,6 +39,36 @@ unenriched_2viz$vis.yr<-unenriched_2viz$visdy/365
 cap.model<-lmer(formula=f,data = capenriched_2viz)
 pin.model<-lmer(formula=f,data = pinenriched_2viz)
 unenriched.model<-lmer(formula=f,data = unenriched_2viz)
+
+### Assess goodness of fit for each model
+library(HLMdiag)
+## cap
+summary(cap.model)
+plot(cap.model)
+infl = hlm_influence(cap.model, level = 'subjid')
+plot(infl$cooksd)
+df.sens<-capenriched_2viz%>%filter(!subjid %in% unlist(infl[infl$cooksd>0.004,'subjid'] ))
+cap.model.sens<-lmer(formula=f,data=df.sens)
+summary(cap.model.sens)
+summary(cap.model)
+## cap
+summary(pin.model)
+plot(pin.model)
+infl = hlm_influence(pin.model, level = 'subjid')
+plot(infl$cooksd)
+df.sens<-pinenriched_2viz%>%filter(!subjid %in% unlist(infl[infl$cooksd>0.00s,'subjid'] ))
+pin.model.sens<-lmer(formula=f,data=df.sens)
+summary(pin.model.sens)
+summary(pin.model)
+## unenriched
+summary(unenriched.model)
+plot(unenriched.model)
+infl = hlm_influence(unenriched.model, level = 'subjid')
+plot(infl$cooksd)
+df.sens<-unenriched_2viz%>%filter(!subjid %in% unlist(infl[infl$cooksd>0.004,'subjid'] ))
+unenriched.model.sens<-lmer(formula=f,data=df.sens)
+summary(unenriched.model.sens)
+summary(unenriched.model)
 
 # extract parameter estimates from each model
 # and create unified dataframe for all parameter estimates
